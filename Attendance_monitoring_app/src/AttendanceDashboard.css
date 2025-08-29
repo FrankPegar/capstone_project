@@ -1,0 +1,102 @@
+/* === Layout === */
+.dashboard-container {
+  width: 100%;              /* Full width */
+  height: 100%;             /* Full height */
+  padding: 20px 40px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #2d3748;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.dashboard-container h1 {
+  font-size: 28px;
+  margin-bottom: 20px;
+  font-weight: 700;
+  text-align: left; /* align left now */
+  color: #1e293b;
+}
+
+/* === Buttons === */
+.button-group {
+  margin-bottom: 20px;
+}
+
+.button-group button {
+  margin-right: 12px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 25px;
+  background: #e2e8f0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.button-group button:hover {
+  background: #cbd5e1;
+}
+
+.button-group button.active {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.4);
+}
+
+/* === Table Container === */
+.table-container {
+  flex: 1;
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow-y: auto;
+  overflow-x: auto;
+  width: 100%;          /* Full width */
+}
+
+/* === Table === */
+.attendance-table {
+  width: 100%;          /* Full width */
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.attendance-table th,
+.attendance-table td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.attendance-table tbody tr:hover {
+  background: #f1f5f9;
+}
+
+/* === Header Colors === */
+.header-blue {
+  background: linear-gradient(90deg, #2563eb, #1d4ed8);
+  color: white;
+}
+
+.header-green {
+  background: linear-gradient(90deg, #16a34a, #15803d);
+  color: white;
+}
+
+.header-red {
+  background: linear-gradient(90deg, #dc2626, #b91c1c);
+  color: white;
+}
+
+/* === Time Highlight === */
+.time-in {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.time-out {
+  color: #dc2626;
+  font-weight: 600;
+}
