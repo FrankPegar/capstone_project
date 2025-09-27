@@ -1,7 +1,7 @@
 /* === Layout === */
 .dashboard-container {
-  width: 100%;              /* Full width */
-  height: 100%;             /* Full height */
+  width: 100%;
+  height: 100%;
   padding: 20px 40px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #2d3748;
@@ -14,28 +14,31 @@
   font-size: 28px;
   margin-bottom: 20px;
   font-weight: 700;
-  text-align: left; /* align left now */
+  text-align: left;
   color: #1e293b;
 }
 
 /* === Buttons === */
 .button-group {
   margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;             /* equal spacing even when wrapping */
 }
 
 .button-group button {
-  margin-right: 12px;
   padding: 10px 22px;
   border: none;
   border-radius: 25px;
   background: #e2e8f0;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.3s;
+  transition: background 0.25s, transform 0.15s;
 }
 
 .button-group button:hover {
   background: #cbd5e1;
+  transform: translateY(-2px);
 }
 
 .button-group button.active {
@@ -53,12 +56,12 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   overflow-y: auto;
   overflow-x: auto;
-  width: 100%;          /* Full width */
+  width: 100%;
 }
 
 /* === Table === */
 .attendance-table {
-  width: 100%;          /* Full width */
+  width: 100%;
   border-collapse: collapse;
   font-size: 15px;
 }
@@ -70,21 +73,15 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.attendance-table tbody tr:hover {
-  background: #f1f5f9;
-}
-
 /* === Header Colors === */
 .header-blue {
   background: linear-gradient(90deg, #2563eb, #1d4ed8);
   color: white;
 }
-
 .header-green {
   background: linear-gradient(90deg, #16a34a, #15803d);
   color: white;
 }
-
 .header-red {
   background: linear-gradient(90deg, #dc2626, #b91c1c);
   color: white;
@@ -95,8 +92,22 @@
   color: #16a34a;
   font-weight: 600;
 }
-
 .time-out {
   color: #dc2626;
   font-weight: 600;
+}
+
+/* === Conditional Row Hover === */
+/* Add these class names in your JSX: row-timein, row-timeout, row-both, row-none */
+.attendance-table tbody tr.row-timein:hover {
+  background: rgba(22, 163, 74, 0.12);  /* green tint */
+}
+.attendance-table tbody tr.row-timeout:hover {
+  background: rgba(220, 38, 38, 0.12);  /* red tint */
+}
+.attendance-table tbody tr.row-both:hover {
+  background: rgba(37, 99, 235, 0.12);  /* blue tint */
+}
+.attendance-table tbody tr.row-none:hover {
+  background: rgba(100, 116, 139, 0.1); /* subtle gray */
 }
