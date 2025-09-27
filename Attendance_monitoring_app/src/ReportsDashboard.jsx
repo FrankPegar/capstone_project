@@ -12,45 +12,56 @@ import {
   Legend,
 } from "recharts";
 import "./App.css";
+import { parseTime, addMinutes } from "./timeUtils";
+import { getScheduleForStrand } from "./schedules";
 
 const COLORS = ["#22c55e", "#f97316", "#94a3b8"];
 
-const parseTime = (time) => {
-  if (!time) return null;
-  const [hhmm, modifier] = time.split(" ");
-  let [hours, minutes] = hhmm.split(":").map(Number);
+const buildArrivalMeta = (student, scheduleConfig) => {
+  const schedule = getScheduleForStrand(scheduleConfig, student.strand);
+  const startMinutes = parseTime(schedule.start);
+  const thresholdMinutes =
+    startMinutes !== null ? addMinutes(startMinutes, schedule.graceMinutes ?? 0) : null;
+  const arrivalMinutes = parseTime(student.timeIn);
+  const isLate =
+    arrivalMinutes !== null &&
+    thresholdMinutes !== null &&
+    arrivalMinutes > thresholdMinutes;
 
-  if (modifier === "PM" && hours !== 12) hours += 12;
-  if (modifier === "AM" && hours === 12) hours = 0;
-
-  return hours * 60 + minutes;
+  return {
+    schedule,
+    arrivalMinutes,
+    thresholdMinutes,
+    isLate,
+  };
 };
 
-const LATE_THRESHOLD_LABEL = "08:05 AM";
-const LATE_THRESHOLD_MINUTES = parseTime(LATE_THRESHOLD_LABEL);
-
-export default function ReportsDashboard({ students }) {
-  const [selectedDate, setSelectedDate] = useState("2025-08-23");
+export default function ReportsDashboard({ students, scheduleConfig = {} }) {
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   const filtered = useMemo(
     () => students.filter((student) => student.date === selectedDate),
     [students, selectedDate]
   );
 
+  const arrivalMeta = useMemo(
+    () => filtered.map((student) => ({ student, meta: buildArrivalMeta(student, scheduleConfig) })),
+    [filtered, scheduleConfig]
+  );
+
   const total = filtered.length;
-  const onTime = filtered.filter((student) => {
-    const arrival = parseTime(student.timeIn);
-    if (arrival === null) return false;
-    return arrival <= LATE_THRESHOLD_MINUTES;
-  }).length;
+  const onTime = arrivalMeta.filter(
+    ({ meta }) =>
+      meta.arrivalMinutes !== null && meta.thresholdMinutes !== null && !meta.isLate
+  ).length;
 
-  const late = filtered.filter((student) => {
-    const arrival = parseTime(student.timeIn);
-    if (arrival === null) return false;
-    return arrival > LATE_THRESHOLD_MINUTES;
-  }).length;
+  const late = arrivalMeta.filter(
+    ({ meta }) =>
+      meta.arrivalMinutes !== null && meta.thresholdMinutes !== null && meta.isLate
+  ).length;
 
-  const notCheckedIn = total - (onTime + late);
+  const checkedIn = arrivalMeta.filter(({ meta }) => meta.arrivalMinutes !== null).length;
+  const notCheckedIn = total - checkedIn;
   const pendingTimeOut = filtered.filter(
     (student) => student.timeIn && !student.timeOut
   ).length;
@@ -63,18 +74,16 @@ export default function ReportsDashboard({ students }) {
 
   const strands = ["STEM", "ICT", "HUMSS", "ABM", "GAS"];
   const strandData = strands.map((strand) => {
-    const strandRecords = filtered.filter((student) => student.strand === strand);
-    const strandOnTime = strandRecords.filter((student) => {
-      const arrival = parseTime(student.timeIn);
-      if (arrival === null) return false;
-      return arrival <= LATE_THRESHOLD_MINUTES;
-    }).length;
+    const strandRecords = arrivalMeta.filter(({ student }) => student.strand === strand);
+    const strandOnTime = strandRecords.filter(
+      ({ meta }) =>
+        meta.arrivalMinutes !== null && meta.thresholdMinutes !== null && !meta.isLate
+    ).length;
 
-    const strandLate = strandRecords.filter((student) => {
-      const arrival = parseTime(student.timeIn);
-      if (arrival === null) return false;
-      return arrival > LATE_THRESHOLD_MINUTES;
-    }).length;
+    const strandLate = strandRecords.filter(
+      ({ meta }) =>
+        meta.arrivalMinutes !== null && meta.thresholdMinutes !== null && meta.isLate
+    ).length;
 
     return {
       strand,
@@ -113,12 +122,12 @@ export default function ReportsDashboard({ students }) {
         <div className="stat-card surface">
           <span className="stat-label">On-Time Arrivals</span>
           <strong className="stat-value">{onTime}</strong>
-          <span className="stat-subtext">Logged by {LATE_THRESHOLD_LABEL}</span>
+          <span className="stat-subtext">Strand start + grace window</span>
         </div>
         <div className="stat-card surface">
           <span className="stat-label">Late Arrivals</span>
           <strong className="stat-value">{late}</strong>
-          <span className="stat-subtext">After {LATE_THRESHOLD_LABEL}</span>
+          <span className="stat-subtext">After assigned strand start</span>
         </div>
         <div className="stat-card surface">
           <span className="stat-label">Pending Time-Out</span>

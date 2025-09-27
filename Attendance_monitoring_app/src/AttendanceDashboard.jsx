@@ -1,30 +1,7 @@
 import React, { useMemo, useState } from "react";
 import "./App.css";
-
-const parseTime = (time) => {
-  if (!time) return null;
-  const [hhmm, modifier] = time.split(" ");
-  let [hours, minutes] = hhmm.split(":").map(Number);
-
-  if (modifier === "PM" && hours !== 12) hours += 12;
-  if (modifier === "AM" && hours === 12) hours = 0;
-
-  return hours * 60 + minutes;
-};
-
-const formatMinutes = (value) => {
-  if (value === null) return "-";
-  const hours24 = Math.floor(value / 60);
-  const minutes = value % 60;
-  const modifier = hours24 >= 12 ? "PM" : "AM";
-  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
-  return `${hours12.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")} ${modifier}`;
-};
-
-const LATE_THRESHOLD_LABEL = "08:05 AM";
-const LATE_THRESHOLD_MINUTES = parseTime(LATE_THRESHOLD_LABEL);
+import { parseTime, formatMinutes, addMinutes } from "./timeUtils";
+import { getScheduleForStrand } from "./schedules";
 
 const averageTime = (records, key) => {
   const times = records
@@ -36,40 +13,81 @@ const averageTime = (records, key) => {
   return Math.round(total / times.length);
 };
 
-const getStatusMeta = (student) => {
-  const hasCheckIn = Boolean(student.timeIn);
-  const hasCheckOut = Boolean(student.timeOut);
-
-  if (!hasCheckIn) {
-    return { label: "Awaiting check-in", tone: "neutral", rowClass: "row-none" };
-  }
-
+const buildArrivalMeta = (student, scheduleConfig) => {
+  const schedule = getScheduleForStrand(scheduleConfig, student.strand);
+  const startMinutes = parseTime(schedule.start);
+  const thresholdMinutes =
+    startMinutes !== null ? addMinutes(startMinutes, schedule.graceMinutes ?? 0) : null;
   const arrivalMinutes = parseTime(student.timeIn);
-  const isLate = arrivalMinutes !== null && arrivalMinutes > LATE_THRESHOLD_MINUTES;
-
-  if (hasCheckOut) {
-    return {
-      label: isLate ? "Late - Checked out" : "On time - Checked out",
-      tone: isLate ? "late" : "ontime",
-      rowClass: "row-both",
-    };
-  }
+  const isLate =
+    arrivalMinutes !== null &&
+    thresholdMinutes !== null &&
+    arrivalMinutes > thresholdMinutes;
 
   return {
-    label: isLate ? "Late - On campus" : "On time - On campus",
-    tone: isLate ? "late" : "ontime",
-    rowClass: "row-timein",
+    schedule,
+    startLabel: startMinutes !== null ? formatMinutes(startMinutes) : schedule.start,
+    arrivalMinutes,
+    thresholdMinutes,
+    thresholdLabel:
+      thresholdMinutes !== null ? formatMinutes(thresholdMinutes) : schedule.start,
+    isLate,
   };
 };
 
-export default function AttendanceDashboard({ students }) {
+const isOnTimeArrival = (student, scheduleConfig) => {
+  const { arrivalMinutes, thresholdMinutes, isLate } = buildArrivalMeta(
+    student,
+    scheduleConfig
+  );
+  if (arrivalMinutes === null || thresholdMinutes === null) return false;
+  return !isLate;
+};
+
+const isLateArrival = (student, scheduleConfig) => {
+  const { arrivalMinutes, thresholdMinutes, isLate } = buildArrivalMeta(
+    student,
+    scheduleConfig
+  );
+  if (arrivalMinutes === null || thresholdMinutes === null) return false;
+  return isLate;
+};
+
+const getStatusMeta = (student, scheduleConfig) => {
+  const hasCheckIn = Boolean(student.timeIn);
+  const hasCheckOut = Boolean(student.timeOut);
+  const arrivalMeta = buildArrivalMeta(student, scheduleConfig);
+
+  if (!hasCheckIn) {
+    return {
+      label: `Awaiting ${arrivalMeta.startLabel} check-in`,
+      tone: "neutral",
+      rowClass: "row-none",
+      isLate: false,
+      thresholdLabel: arrivalMeta.thresholdLabel,
+    };
+  }
+
+  const baseLabel = arrivalMeta.isLate ? "Late" : "On time";
+  const suffix = hasCheckOut ? "Checked out" : "On campus";
+
+  return {
+    label: `${baseLabel} - ${suffix}`,
+    tone: arrivalMeta.isLate ? "late" : "ontime",
+    rowClass: hasCheckOut ? "row-both" : "row-timein",
+    isLate: arrivalMeta.isLate,
+    thresholdLabel: arrivalMeta.thresholdLabel,
+  };
+};
+
+export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
   const [view, setView] = useState("combined");
   const [filterStrand, setFilterStrand] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
   const [timeType, setTimeType] = useState("none");
   const [timeValue, setTimeValue] = useState("");
   const [onlyNoTimeOut, setOnlyNoTimeOut] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("2025-08-23");
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   const todayRecords = useMemo(
     () => students.filter((student) => student.date === selectedDate),
@@ -79,17 +97,13 @@ export default function AttendanceDashboard({ students }) {
   const totalStudents = todayRecords.length;
   const checkedInStudents = todayRecords.filter((student) => Boolean(student.timeIn)).length;
 
-  const onTimeStudents = todayRecords.filter((student) => {
-    const arrival = parseTime(student.timeIn);
-    if (arrival === null) return false;
-    return arrival <= LATE_THRESHOLD_MINUTES;
-  }).length;
+  const onTimeStudents = todayRecords.filter((student) =>
+    isOnTimeArrival(student, scheduleConfig)
+  ).length;
 
-  const lateStudents = todayRecords.filter((student) => {
-    const arrival = parseTime(student.timeIn);
-    if (arrival === null) return false;
-    return arrival > LATE_THRESHOLD_MINUTES;
-  }).length;
+  const lateStudents = todayRecords.filter((student) =>
+    isLateArrival(student, scheduleConfig)
+  ).length;
 
   const notCheckedIn = totalStudents - checkedInStudents;
 
@@ -114,8 +128,10 @@ export default function AttendanceDashboard({ students }) {
       const studentTime = parseTime(student[timeType]);
       const filterTime = parseTime(timeValue);
 
-      if (!studentTime) {
+      if (studentTime === null) {
         matchesTime = false;
+      } else if (filterTime === null) {
+        matchesTime = true;
       } else {
         matchesTime = studentTime >= filterTime;
       }
@@ -204,12 +220,12 @@ export default function AttendanceDashboard({ students }) {
         <div className="stat-card surface">
           <span className="stat-label">On-Time Arrivals</span>
           <strong className="stat-value">{onTimeStudents}</strong>
-          <span className="stat-subtext">By {LATE_THRESHOLD_LABEL}</span>
+          <span className="stat-subtext">Strand start + grace window</span>
         </div>
         <div className="stat-card surface">
           <span className="stat-label">Late Arrivals</span>
           <strong className="stat-value">{lateStudents}</strong>
-          <span className="stat-subtext">After {LATE_THRESHOLD_LABEL}</span>
+          <span className="stat-subtext">After assigned strand start</span>
         </div>
         <div className="stat-card surface">
           <span className="stat-label">Pending Time-Out</span>
@@ -273,9 +289,7 @@ export default function AttendanceDashboard({ students }) {
             </thead>
             <tbody>
               {filteredStudents.map((student) => {
-                const { label, tone, rowClass } = getStatusMeta(student);
-                const arrival = parseTime(student.timeIn);
-                const isLate = arrival !== null && arrival > LATE_THRESHOLD_MINUTES;
+                const { label, tone, rowClass, isLate } = getStatusMeta(student, scheduleConfig);
 
                 return (
                   <tr key={student.id} className={`attendance-row ${rowClass}`}>
