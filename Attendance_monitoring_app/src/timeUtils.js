@@ -8,6 +8,14 @@ export const parseTime = (time) => {
   let hours;
   let minutes;
 
+  const dateTimeMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (dateTimeMatch) {
+    hours = Number(dateTimeMatch[2]);
+    minutes = Number(dateTimeMatch[3]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return hours * 60 + minutes;
+  }
+
   if (hasMeridiem) {
     const [timePart, modifierRaw] = trimmed.split(/\s+/);
     const modifier = modifierRaw.toUpperCase();
@@ -22,6 +30,11 @@ export const parseTime = (time) => {
     if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
     hours = hh;
     minutes = mm;
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.getHours() * 60 + parsed.getMinutes();
   }
 
   return hours * 60 + minutes;

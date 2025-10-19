@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AttendanceDashboard from "./AttendanceDashboard";
 import ReportsDashboard from "./ReportsDashboard";
 import AllStudents from "./AllStudents";
 import ScheduleManager from "./ScheduleManager";
 import { createDefaultScheduleMap, DEFAULT_STRAND_SCHEDULE } from "./schedules";
+import supabase, { isSupabaseConfigured } from "./supabaseClient";
 import "./App.css";
 
 const PAGE_META = {
@@ -34,473 +35,134 @@ const PAGE_META = {
   },
 };
 
-const SEEDED_STUDENTS = [
-  {
-      id: "2023001",
-      firstName: "Juan",
-      lastName: "Dela Cruz",
-      timeIn: "08:01 AM",
-      timeOut: "03:45 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023002",
-      firstName: "Maria",
-      lastName: "Santos",
-      timeIn: "08:10 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023003",
-      firstName: "Pedro",
-      lastName: "Reyes",
-      timeIn: "",
-      timeOut: "",
-      strand: "HUMSS",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023004",
-      firstName: "Ana",
-      lastName: "Lopez",
-      timeIn: "08:05 AM",
-      timeOut: "04:00 PM",
-      strand: "ABM",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023005",
-      firstName: "Carlo",
-      lastName: "Garcia",
-      timeIn: "08:12 AM",
-      timeOut: "03:50 PM",
-      strand: "GAS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023006",
-      firstName: "Luisa",
-      lastName: "Martinez",
-      timeIn: "",
-      timeOut: "",
-      strand: "STEM",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023007",
-      firstName: "Miguel",
-      lastName: "Torres",
-      timeIn: "07:52 AM",
-      timeOut: "03:40 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023008",
-      firstName: "Sofia",
-      lastName: "Navarro",
-      timeIn: "08:18 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023009",
-      firstName: "Rafael",
-      lastName: "Domingo",
-      timeIn: "07:58 AM",
-      timeOut: "04:12 PM",
-      strand: "HUMSS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023010",
-      firstName: "Bianca",
-      lastName: "Soriano",
-      timeIn: "08:22 AM",
-      timeOut: "",
-      strand: "ABM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023011",
-      firstName: "Daniel",
-      lastName: "Cruz",
-      timeIn: "",
-      timeOut: "",
-      strand: "GAS",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023012",
-      firstName: "Erika",
-      lastName: "Mendoza",
-      timeIn: "07:47 AM",
-      timeOut: "03:35 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023013",
-      firstName: "Gabriel",
-      lastName: "Villanueva",
-      timeIn: "08:03 AM",
-      timeOut: "03:55 PM",
-      strand: "ICT",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023014",
-      firstName: "Hannah",
-      lastName: "Sarmiento",
-      timeIn: "08:17 AM",
-      timeOut: "",
-      strand: "HUMSS",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023015",
-      firstName: "Isaiah",
-      lastName: "Ramos",
-      timeIn: "07:50 AM",
-      timeOut: "04:15 PM",
-      strand: "ABM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023016",
-      firstName: "Julia",
-      lastName: "Ramirez",
-      timeIn: "08:06 AM",
-      timeOut: "03:58 PM",
-      strand: "GAS",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023017",
-      firstName: "Kevin",
-      lastName: "Bautista",
-      timeIn: "08:28 AM",
-      timeOut: "",
-      strand: "STEM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023018",
-      firstName: "Lara",
-      lastName: "Ocampo",
-      timeIn: "",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023019",
-      firstName: "Marco",
-      lastName: "Hernandez",
-      timeIn: "07:42 AM",
-      timeOut: "03:30 PM",
-      strand: "HUMSS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023020",
-      firstName: "Nina",
-      lastName: "Velasquez",
-      timeIn: "08:09 AM",
-      timeOut: "",
-      strand: "ABM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023021",
-      firstName: "Oscar",
-      lastName: "Aguilar",
-      timeIn: "08:14 AM",
-      timeOut: "04:05 PM",
-      strand: "GAS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023022",
-      firstName: "Pia",
-      lastName: "Estrada",
-      timeIn: "07:56 AM",
-      timeOut: "03:48 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023023",
-      firstName: "Ramon",
-      lastName: "Gutierrez",
-      timeIn: "08:31 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023024",
-      firstName: "Sara",
-      lastName: "Jimenez",
-      timeIn: "08:02 AM",
-      timeOut: "04:10 PM",
-      strand: "HUMSS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023025",
-      firstName: "Tomas",
-      lastName: "Villareal",
-      timeIn: "",
-      timeOut: "",
-      strand: "ABM",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023026",
-      firstName: "Ursula",
-      lastName: "Rivera",
-      timeIn: "07:59 AM",
-      timeOut: "04:20 PM",
-      strand: "GAS",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023027",
-      firstName: "Victor",
-      lastName: "Morales",
-      timeIn: "08:11 AM",
-      timeOut: "",
-      strand: "STEM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023028",
-      firstName: "Wendy",
-      lastName: "Flores",
-      timeIn: "07:54 AM",
-      timeOut: "03:42 PM",
-      strand: "ICT",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023029",
-      firstName: "Xavier",
-      lastName: "Delos Reyes",
-      timeIn: "08:19 AM",
-      timeOut: "",
-      strand: "HUMSS",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023030",
-      firstName: "Yara",
-      lastName: "Francisco",
-      timeIn: "07:53 AM",
-      timeOut: "04:18 PM",
-      strand: "ABM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023031",
-      firstName: "Zachary",
-      lastName: "Cabrera",
-      timeIn: "",
-      timeOut: "",
-      strand: "GAS",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023032",
-      firstName: "Alicia",
-      lastName: "Santos",
-      timeIn: "08:00 AM",
-      timeOut: "03:52 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023033",
-      firstName: "Benjie",
-      lastName: "Cruz",
-      timeIn: "08:24 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023034",
-      firstName: "Chloe",
-      lastName: "Fajardo",
-      timeIn: "07:49 AM",
-      timeOut: "04:07 PM",
-      strand: "HUMSS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023035",
-      firstName: "Diego",
-      lastName: "Aquino",
-      timeIn: "08:13 AM",
-      timeOut: "",
-      strand: "ABM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023036",
-      firstName: "Eliza",
-      lastName: "Pascual",
-      timeIn: "07:51 AM",
-      timeOut: "03:57 PM",
-      strand: "GAS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023037",
-      firstName: "Felix",
-      lastName: "Arriola",
-      timeIn: "08:07 AM",
-      timeOut: "04:03 PM",
-      strand: "STEM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023038",
-      firstName: "Gia",
-      lastName: "Manalo",
-      timeIn: "08:26 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023039",
-      firstName: "Hector",
-      lastName: "Vergara",
-      timeIn: "",
-      timeOut: "",
-      strand: "HUMSS",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023040",
-      firstName: "Ines",
-      lastName: "Calderon",
-      timeIn: "07:46 AM",
-      timeOut: "03:44 PM",
-      strand: "ABM",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023041",
-      firstName: "Joaquin",
-      lastName: "Salcedo",
-      timeIn: "08:04 AM",
-      timeOut: "",
-      strand: "GAS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023042",
-      firstName: "Kara",
-      lastName: "Licup",
-      timeIn: "07:57 AM",
-      timeOut: "04:09 PM",
-      strand: "STEM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023043",
-      firstName: "Leo",
-      lastName: "Francisco",
-      timeIn: "08:20 AM",
-      timeOut: "",
-      strand: "ICT",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023044",
-      firstName: "Mila",
-      lastName: "Quijano",
-      timeIn: "07:45 AM",
-      timeOut: "03:46 PM",
-      strand: "HUMSS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023045",
-      firstName: "Noel",
-      lastName: "Santiago",
-      timeIn: "08:23 AM",
-      timeOut: "",
-      strand: "ABM",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023046",
-      firstName: "Olivia",
-      lastName: "Galvez",
-      timeIn: "08:08 AM",
-      timeOut: "03:59 PM",
-      strand: "GAS",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023047",
-      firstName: "Paolo",
-      lastName: "Serrano",
-      timeIn: "",
-      timeOut: "",
-      strand: "STEM",
-      date: "2025-08-22",
-    },
-    {
-      id: "2023048",
-      firstName: "Queenie",
-      lastName: "Abad",
-      timeIn: "07:48 AM",
-      timeOut: "04:13 PM",
-      strand: "ICT",
-      date: "2025-08-23",
-    },
-    {
-      id: "2023049",
-      firstName: "Rico",
-      lastName: "Mendoza",
-      timeIn: "08:15 AM",
-      timeOut: "",
-      strand: "HUMSS",
-      date: "2025-08-24",
-    },
-    {
-      id: "2023050",
-      firstName: "Selene",
-      lastName: "Orfano",
-      timeIn: "07:44 AM",
-      timeOut: "03:38 PM",
-      strand: "ABM",
-      date: "2025-08-23",
-    },
-];
+const GUARDIAN_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeEmailInput = (raw = "") => raw.trim().toLowerCase();
+
+const validateGuardianEmail = (value = "") => {
+  if (!value) return "Parent email is required.";
+  if (!GUARDIAN_EMAIL_PATTERN.test(value)) {
+    return "Enter a valid email address.";
+  }
+  return "";
+};
+
+const gradeNumberToLabel = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  const numeric = Number(value);
+  if (!Number.isNaN(numeric)) return `Grade ${numeric}`;
+  return value;
+};
+
+const labelToGradeNumber = (label) => {
+  if (!label) return null;
+  const match = `${label}`.match(/\d+/);
+  return match ? Number(match[0]) : null;
+};
+
+const formatTimeDisplay = (value) => {
+  if (!value) return "";
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = (num) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+};
+
+const sortStudentsByName = (records) =>
+  [...records].sort((a, b) => {
+    const lastCompare = (a.lastName || "").localeCompare(b.lastName || "", undefined, {
+      sensitivity: "base",
+    });
+    if (lastCompare !== 0) return lastCompare;
+    return (a.firstName || "").localeCompare(b.firstName || "", undefined, {
+      sensitivity: "base",
+    });
+  });
+
+const mapRowToStudent = (row = {}) => {
+  const latestAttendance =
+    Array.isArray(row.attendance) && row.attendance.length > 0 ? row.attendance[0] : null;
+
+  return {
+    supabaseId: row.id ?? null,
+    id: row.student_id ?? row.id ?? "",
+    firstName: row.first_name ?? "",
+    lastName: row.last_name ?? "",
+    strand: row.strand ?? "",
+    gradeLevel: gradeNumberToLabel(row.grade_level),
+    guardianEmail: row.parent_email ?? "",
+    timeIn: formatTimeDisplay(latestAttendance?.time_in),
+    timeOut: formatTimeDisplay(latestAttendance?.time_out),
+    date: latestAttendance?.date ?? "",
+    status: latestAttendance?.status ?? "",
+  };
+};
+
+const mapStudentToRow = (student) => ({
+  student_id: student.id,
+  first_name: student.firstName,
+  last_name: student.lastName,
+  strand: student.strand,
+  grade_level: labelToGradeNumber(student.gradeLevel),
+  parent_email: student.guardianEmail,
+});
 
 export default function App() {
   const [tab, setTab] = useState("attendance");
   const [scheduleConfig, setScheduleConfig] = useState(() => createDefaultScheduleMap());
 
-  const [students, setStudents] = useState(() =>
-    SEEDED_STUDENTS.map((student, index) => ({
-      ...student,
-      gradeLevel: student.gradeLevel ?? (index % 2 === 0 ? "Grade 11" : "Grade 12"),
-      guardianContact:
-        student.guardianContact ?? `0917${(index + 1234567).toString().padStart(7, "0")}`,
-    }))
-  );
+  const [students, setStudents] = useState([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(isSupabaseConfigured);
+  const [loadError, setLoadError] = useState("");
+  const [isSavingStudent, setIsSavingStudent] = useState(false);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setIsLoadingStudents(false);
+      return;
+    }
 
+    let isMounted = true;
+
+    const fetchStudents = async () => {
+      setIsLoadingStudents(true);
+      const { data, error } = await supabase
+        .from("students")
+        .select(
+          "id, student_id, first_name, last_name, strand, grade_level, parent_email, attendance:attendance(date, time_in, time_out, status)"
+        )
+        .order("last_name", { ascending: true })
+        .order("first_name", { ascending: true })
+        .order("date", { referencedTable: "attendance", ascending: false })
+        .limit(1, { referencedTable: "attendance" });
+
+      if (!isMounted) return;
+
+      if (error) {
+        console.error("Failed to load students from Supabase:", error);
+        setLoadError("Unable to load students from Supabase. Please try again.");
+        setStudents([]);
+      } else {
+        setStudents(sortStudentsByName((data || []).map(mapRowToStudent)));
+        setLoadError("");
+      }
+      setIsLoadingStudents(false);
+    };
+
+    fetchStudents();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isSupabaseConfigured, supabase]);
 
   const handleScheduleChange = (strand, updates) => {
     setScheduleConfig((prev) => {
@@ -539,31 +201,129 @@ export default function App() {
     lastName: "",
     strand: "STEM",
     gradeLevel: "Grade 11",
-    guardianContact: "",
+    guardianEmail: "",
   });
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const handleGuardianEmailChange = (value) => {
+    setNewStudent((prev) => ({ ...prev, guardianEmail: value }));
 
-  const handleRegister = (e) => {
+    if (emailTouched) {
+      setEmailError(validateGuardianEmail(normalizeEmailInput(value)));
+    }
+  };
+
+  const handleEmailBlur = () => {
+    const normalized = normalizeEmailInput(newStudent.guardianEmail);
+    setNewStudent((prev) => ({ ...prev, guardianEmail: normalized }));
+    setEmailTouched(true);
+    setEmailError(validateGuardianEmail(normalized));
+  };
+
+  const resetEmailValidation = () => {
+    setEmailTouched(false);
+    setEmailError("");
+  };
+
+  const isRegisterDisabled = isLoadingStudents || isSavingStudent;
+  const registerButtonLabel = isSavingStudent
+    ? "Saving..."
+    : isLoadingStudents
+    ? "Loading..."
+    : "Register Student";
+
+  const handleRegister = async (e) => {
     e.preventDefault();
+    if (isRegisterDisabled) return;
+    setSaveError("");
+
     const trimmedId = newStudent.id.trim();
     const trimmedFirst = newStudent.firstName.trim();
     const trimmedLast = newStudent.lastName.trim();
-    const trimmedContact = newStudent.guardianContact.trim();
+    const normalizedEmail = normalizeEmailInput(newStudent.guardianEmail);
 
-    if (!trimmedId || !trimmedFirst || !trimmedLast || !trimmedContact) return;
+    if (!trimmedId || !trimmedFirst || !trimmedLast) return;
 
-    setStudents([
-      ...students,
-      {
-        ...newStudent,
-        id: trimmedId,
-        firstName: trimmedFirst,
-        lastName: trimmedLast,
-        guardianContact: trimmedContact,
-        timeIn: "",
-        timeOut: "",
-        date: new Date().toISOString().split("T")[0],
-      },
-    ]);
+    const emailValidation = validateGuardianEmail(normalizedEmail);
+    if (emailValidation) {
+      setEmailTouched(true);
+      setEmailError(emailValidation);
+      setNewStudent((prev) => ({ ...prev, guardianEmail: normalizedEmail }));
+      return;
+    }
+
+    const studentRecord = {
+      ...newStudent,
+      id: trimmedId,
+      firstName: trimmedFirst,
+      lastName: trimmedLast,
+      guardianEmail: normalizedEmail,
+      timeIn: "",
+      timeOut: "",
+      date: new Date().toISOString().split("T")[0],
+      status: "Registered",
+      supabaseId: null,
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      setIsSavingStudent(true);
+      try {
+        const { data, error } = await supabase
+          .from("students")
+          .insert([mapStudentToRow(studentRecord)])
+          .select(
+            "id, student_id, first_name, last_name, strand, grade_level, parent_email, attendance:attendance(date, time_in, time_out, status)"
+          )
+          .single();
+
+        if (error) throw error;
+
+        let attendanceData = null;
+        const { data: attendanceInsert, error: attendanceError } = await supabase
+          .from("attendance")
+          .insert([
+            {
+              student_id: studentRecord.id,
+              date: studentRecord.date,
+              status: studentRecord.status,
+            },
+          ])
+          .select("date, time_in, time_out, status")
+          .single();
+
+        if (attendanceError) {
+          console.error("Failed to seed attendance record via Supabase:", attendanceError);
+        } else {
+          attendanceData = attendanceInsert;
+        }
+
+        if (attendanceData) {
+          data.attendance = Array.isArray(data.attendance) ? data.attendance : [];
+          data.attendance.unshift(attendanceData);
+        }
+
+        const mappedStudent = mapRowToStudent(data);
+        const hydratedStudent = {
+          ...mappedStudent,
+          date: mappedStudent.date || studentRecord.date,
+          timeIn: mappedStudent.timeIn || studentRecord.timeIn,
+          timeOut: mappedStudent.timeOut || studentRecord.timeOut,
+          status: mappedStudent.status || studentRecord.status,
+        };
+        setStudents((prevStudents) => sortStudentsByName([...prevStudents, hydratedStudent]));
+      } catch (error) {
+        console.error("Failed to register student via Supabase:", error);
+        const message = error?.message || "Could not register student via Supabase.";
+        setSaveError(message);
+        alert(`${message}\nCheck the browser console for details.`);
+        return;
+      } finally {
+        setIsSavingStudent(false);
+      }
+    } else {
+      setStudents((prevStudents) => sortStudentsByName([...prevStudents, studentRecord]));
+    }
 
     setNewStudent({
       id: "",
@@ -571,8 +331,9 @@ export default function App() {
       lastName: "",
       strand: "STEM",
       gradeLevel: "Grade 11",
-      guardianContact: "",
+      guardianEmail: "",
     });
+    resetEmailValidation();
     alert("Student successfully registered!");
   };
 
@@ -622,73 +383,118 @@ export default function App() {
           <div className="register-wrapper">
             <h1 className="register-title">Register New Student</h1>
             <form className="register-form" onSubmit={handleRegister}>
-              <div className="form-row">
-                <label>Student ID</label>
-                <input
-                  type="text"
-                  value={newStudent.id}
-                  onChange={(e) => setNewStudent({ ...newStudent, id: e.target.value })}
-                  required
-                />
+              {isSupabaseConfigured && !loadError && (
+                <div className="form-alert success">
+                  Connected to Supabase — new registrations will sync automatically.
+                </div>
+              )}
+              {loadError && <div className="form-alert warning">{loadError}</div>}
+              {saveError && <div className="form-alert warning">{saveError}</div>}
+
+              <div className="form-grid">
+                <div className="form-field span-2">
+                  <label htmlFor="student-id">Student ID</label>
+                  <input
+                    id="student-id"
+                    type="text"
+                    value={newStudent.id}
+                    onChange={(e) =>
+                      setNewStudent((prev) => ({ ...prev, id: e.target.value }))
+                    }
+                    autoComplete="off"
+                    required
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="first-name">First Name</label>
+                  <input
+                    id="first-name"
+                    type="text"
+                    value={newStudent.firstName}
+                    onChange={(e) =>
+                      setNewStudent((prev) => ({ ...prev, firstName: e.target.value }))
+                    }
+                    autoComplete="given-name"
+                    required
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="last-name">Last Name</label>
+                  <input
+                    id="last-name"
+                    type="text"
+                    value={newStudent.lastName}
+                    onChange={(e) =>
+                      setNewStudent((prev) => ({ ...prev, lastName: e.target.value }))
+                    }
+                    autoComplete="family-name"
+                    required
+                  />
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="strand">Strand</label>
+                  <select
+                    id="strand"
+                    value={newStudent.strand}
+                    onChange={(e) =>
+                      setNewStudent((prev) => ({ ...prev, strand: e.target.value }))
+                    }
+                  >
+                    <option>STEM</option>
+                    <option>ICT</option>
+                    <option>HUMSS</option>
+                    <option>ABM</option>
+                    <option>GAS</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label htmlFor="grade-level">Grade Level</label>
+                  <select
+                    id="grade-level"
+                    value={newStudent.gradeLevel}
+                    onChange={(e) =>
+                      setNewStudent((prev) => ({ ...prev, gradeLevel: e.target.value }))
+                    }
+                  >
+                    <option>Grade 11</option>
+                    <option>Grade 12</option>
+                  </select>
+                </div>
+
+                <div className={"form-field span-2" + (emailTouched && emailError ? " has-error" : "")}>
+                  <div className="field-label">
+                    <label htmlFor="guardian-email">Parent / Guardian Email</label>
+                    <span className="field-hint">Format: name@example.com</span>
+                  </div>
+                  <input
+                    id="guardian-email"
+                    type="email"
+                    placeholder="parent@example.com"
+                    value={newStudent.guardianEmail}
+                    onChange={(e) => handleGuardianEmailChange(e.target.value)}
+                    onBlur={handleEmailBlur}
+                    aria-invalid={emailTouched && !!emailError}
+                    aria-describedby={emailTouched && emailError ? "guardian-email-error" : undefined}
+                    autoComplete="email"
+                    required
+                  />
+                  {emailTouched && emailError && (
+                    <p id="guardian-email-error" className="field-error">
+                      {emailError}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="form-row">
-                <label>First Name</label>
-                <input
-                  type="text"
-                  value={newStudent.firstName}
-                  onChange={(e) => setNewStudent({ ...newStudent, firstName: e.target.value })}
-                  required
-                />
+              <div className="form-actions">
+                <button type="submit" className="register-btn" disabled={isRegisterDisabled}>
+                  {registerButtonLabel}
+                </button>
               </div>
-
-              <div className="form-row">
-                <label>Last Name</label>
-                <input
-                  type="text"
-                  value={newStudent.lastName}
-                  onChange={(e) => setNewStudent({ ...newStudent, lastName: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-row">
-                <label>Strand</label>
-                <select
-                  value={newStudent.strand}
-                  onChange={(e) => setNewStudent({ ...newStudent, strand: e.target.value })}
-                >
-                  <option>STEM</option>
-                  <option>ICT</option>
-                  <option>HUMSS</option>
-                  <option>ABM</option>
-                  <option>GAS</option>
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label>Grade Level</label>
-                <select
-                  value={newStudent.gradeLevel}
-                  onChange={(e) => setNewStudent({ ...newStudent, gradeLevel: e.target.value })}
-                >
-                  <option>Grade 11</option>
-                  <option>Grade 12</option>
-                </select>
-              </div>
-
-              <div className="form-row">
-                <label>Parent / Guardian Contact</label>
-                <input
-                  type="tel"
-                  placeholder="09xxxxxxxxx"
-                  value={newStudent.guardianContact}
-                  onChange={(e) => setNewStudent({ ...newStudent, guardianContact: e.target.value })}
-                  required
-                />
-              </div>
-
-              <button type="submit" className="register-btn">Register Student</button>
             </form>
           </div>
         )}

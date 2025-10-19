@@ -2,13 +2,12 @@ import React, { useMemo, useState } from "react";
 import "./App.css";
 
 const normalize = (value = "") => value.toLowerCase().trim();
-const digitsOnly = (value = "") => value.replace(/\D/g, "");
 
 export default function AllStudents({ students }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [strandFilter, setStrandFilter] = useState("All");
   const [gradeFilter, setGradeFilter] = useState("All");
-  const [contactFilter, setContactFilter] = useState("");
+  const [emailFilter, setEmailFilter] = useState("");
 
   const strandOptions = useMemo(() => {
     const unique = new Set();
@@ -28,7 +27,7 @@ export default function AllStudents({ students }) {
 
   const filteredStudents = useMemo(() => {
     const search = normalize(searchTerm);
-    const contactDigits = digitsOnly(contactFilter);
+    const emailQuery = normalize(emailFilter);
 
     return students.filter((student) => {
       const fullName = normalize(`${student.firstName} ${student.lastName}`);
@@ -38,12 +37,12 @@ export default function AllStudents({ students }) {
       const matchesStrand = strandFilter === "All" || student.strand === strandFilter;
       const matchesGrade = gradeFilter === "All" || student.gradeLevel === gradeFilter;
 
-      const contactValue = digitsOnly(student.guardianContact || "");
-      const matchesContact = !contactDigits || contactValue.includes(contactDigits);
+      const guardianEmail = normalize(student.guardianEmail || "");
+      const matchesEmail = !emailQuery || guardianEmail.includes(emailQuery);
 
-      return matchesSearch && matchesStrand && matchesGrade && matchesContact;
+      return matchesSearch && matchesStrand && matchesGrade && matchesEmail;
     });
-  }, [students, searchTerm, strandFilter, gradeFilter, contactFilter]);
+  }, [students, searchTerm, strandFilter, gradeFilter, emailFilter]);
 
   const sortedStudents = useMemo(
     () =>
@@ -76,7 +75,7 @@ export default function AllStudents({ students }) {
     setSearchTerm("");
     setStrandFilter("All");
     setGradeFilter("All");
-    setContactFilter("");
+    setEmailFilter("");
   };
 
   const emptyColumns = 6;
@@ -125,12 +124,12 @@ export default function AllStudents({ students }) {
           </div>
 
           <div className="filter-box stack">
-            <label>Contact Digits</label>
+            <label>Parent Email</label>
             <input
               type="text"
-              placeholder="Type digits to match"
-              value={contactFilter}
-              onChange={(e) => setContactFilter(e.target.value)}
+              placeholder="Search by email"
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
             />
           </div>
         </div>
@@ -173,7 +172,7 @@ export default function AllStudents({ students }) {
                 <th>Name</th>
                 <th>Strand</th>
                 <th>Grade Level</th>
-                <th>Guardian Contact</th>
+                <th>Parent Email</th>
                 <th>Last Attendance</th>
               </tr>
             </thead>
@@ -197,7 +196,7 @@ export default function AllStudents({ students }) {
                     </td>
                     <td>{student.strand}</td>
                     <td>{student.gradeLevel || "-"}</td>
-                    <td>{student.guardianContact || "-"}</td>
+                    <td>{student.guardianEmail || "-"}</td>
                     <td>
                       <span className="name-secondary">{attendanceStamp}</span>
                     </td>
