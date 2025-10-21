@@ -37,11 +37,26 @@ const buildArrivalMeta = (student, scheduleConfig) => {
 };
 
 export default function ReportsDashboard({ students, scheduleConfig = {} }) {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState("");
+
+  const availableDates = useMemo(() => {
+    const unique = new Set();
+    students.forEach((student) => {
+      if (student.date) unique.add(student.date);
+    });
+    return Array.from(unique).sort((a, b) => b.localeCompare(a));
+  }, [students]);
+
+  const defaultDate = useMemo(() => {
+    if (availableDates.length > 0) return availableDates[0];
+    return new Date().toISOString().split("T")[0];
+  }, [availableDates]);
+
+  const activeDate = selectedDate || defaultDate;
 
   const filtered = useMemo(
-    () => students.filter((student) => student.date === selectedDate),
-    [students, selectedDate]
+    () => students.filter((student) => student.date === activeDate),
+    [students, activeDate]
   );
 
   const arrivalMeta = useMemo(
@@ -99,14 +114,14 @@ export default function ReportsDashboard({ students, scheduleConfig = {} }) {
       <section className="panel surface">
         <div className="panel-header">
           <h2>Daily Snapshot</h2>
-          <p>Track who arrived on time versus late for {selectedDate}.</p>
+          <p>Track who arrived on time versus late for {activeDate}.</p>
         </div>
         <div className="filters-grid">
           <div className="filter-box stack">
             <label>Select Date</label>
             <input
               type="date"
-              value={selectedDate}
+              value={activeDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>

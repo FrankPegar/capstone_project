@@ -3,7 +3,22 @@ import "./App.css";
 
 const normalize = (value = "") => value.toLowerCase().trim();
 
-export default function AllStudents({ students }) {
+export default function AllStudents({
+  students,
+  onDeleteStudent = () => {},
+  deletingStudentIds = new Set(),
+  deleteError = "",
+  onEditRequest = () => {},
+  editingStudent = null,
+  onEditFieldChange = () => {},
+  onEditEmailBlur = () => {},
+  editEmailTouched = false,
+  editEmailError = "",
+  onEditCancel = () => {},
+  onEditSubmit = () => {},
+  isSavingEdit = false,
+  editError = "",
+}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [strandFilter, setStrandFilter] = useState("All");
   const [gradeFilter, setGradeFilter] = useState("All");
@@ -78,7 +93,7 @@ export default function AllStudents({ students }) {
     setEmailFilter("");
   };
 
-  const emptyColumns = 6;
+  const emptyColumns = 7;
 
   return (
     <div className="dashboard-container">
@@ -87,6 +102,8 @@ export default function AllStudents({ students }) {
           <h2>Student Directory</h2>
           <p>Browse every registered learner and drill down by strand, grade, or family contact.</p>
         </div>
+
+        {deleteError && <div className="form-alert warning">{deleteError}</div>}
 
         <div className="filters-grid">
           <div className="filter-box stack">
@@ -141,6 +158,114 @@ export default function AllStudents({ students }) {
         </div>
       </section>
 
+      {editingStudent && (
+        <section className="panel surface">
+          <div className="panel-header">
+            <h2>Edit Student</h2>
+            <p>Update the student’s details and save to sync changes.</p>
+          </div>
+
+          {editError && <div className="form-alert warning">{editError}</div>}
+
+          <form className="register-form" onSubmit={onEditSubmit}>
+            <div className="form-grid">
+              <div className="form-field span-2">
+                <label htmlFor="edit-student-id">Student ID</label>
+                <input id="edit-student-id" type="text" value={editingStudent.id} disabled />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="edit-first-name">First Name</label>
+                <input
+                  id="edit-first-name"
+                  type="text"
+                  value={editingStudent.firstName}
+                  onChange={(e) => onEditFieldChange("firstName", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="edit-last-name">Last Name</label>
+                <input
+                  id="edit-last-name"
+                  type="text"
+                  value={editingStudent.lastName}
+                  onChange={(e) => onEditFieldChange("lastName", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="edit-strand">Strand</label>
+                <select
+                  id="edit-strand"
+                  value={editingStudent.strand}
+                  onChange={(e) => onEditFieldChange("strand", e.target.value)}
+                >
+                  <option>STEM</option>
+                  <option>ICT</option>
+                  <option>HUMSS</option>
+                  <option>ABM</option>
+                  <option>GAS</option>
+                </select>
+              </div>
+
+              <div className="form-field">
+                <label htmlFor="edit-grade-level">Grade Level</label>
+                <select
+                  id="edit-grade-level"
+                  value={editingStudent.gradeLevel}
+                  onChange={(e) => onEditFieldChange("gradeLevel", e.target.value)}
+                >
+                  <option value="">Select grade</option>
+                  <option>Grade 11</option>
+                  <option>Grade 12</option>
+                </select>
+              </div>
+
+              <div
+                className={
+                  "form-field span-2" +
+                  (editEmailTouched && editEmailError ? " has-error" : "")
+                }
+              >
+                <div className="field-label">
+                  <label htmlFor="edit-guardian-email">Parent / Guardian Email</label>
+                  <span className="field-hint">Format: name@example.com</span>
+                </div>
+                <input
+                  id="edit-guardian-email"
+                  type="email"
+                  value={editingStudent.guardianEmail}
+                  onChange={(e) => onEditFieldChange("guardianEmail", e.target.value)}
+                  onBlur={onEditEmailBlur}
+                  aria-invalid={editEmailTouched && !!editEmailError}
+                  aria-describedby={
+                    editEmailTouched && editEmailError ? "edit-guardian-email-error" : undefined
+                  }
+                  required
+                />
+                {editEmailTouched && editEmailError && (
+                  <p id="edit-guardian-email-error" className="field-error">
+                    {editEmailError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="ghost-button" onClick={onEditCancel}>
+                Cancel
+              </button>
+              <button type="submit" className="primary-button" disabled={isSavingEdit}>
+                {isSavingEdit ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
       <section className="stat-grid">
         <div className="stat-card surface">
           <span className="stat-label">Total Students</span>
@@ -174,6 +299,7 @@ export default function AllStudents({ students }) {
                 <th>Grade Level</th>
                 <th>Parent Email</th>
                 <th>Last Attendance</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -185,6 +311,14 @@ export default function AllStudents({ students }) {
                 ]
                   .filter(Boolean)
                   .join(" | ") || "-";
+
+                const isDeleting =
+                  Boolean(
+                    deletingStudentIds &&
+                      typeof deletingStudentIds.has === "function" &&
+                      deletingStudentIds.has(student.id)
+                  ) ||
+                  (Array.isArray(deletingStudentIds) && deletingStudentIds.includes(student.id));
 
                 return (
                   <tr key={student.id}>
@@ -199,6 +333,24 @@ export default function AllStudents({ students }) {
                     <td>{student.guardianEmail || "-"}</td>
                     <td>
                       <span className="name-secondary">{attendanceStamp}</span>
+                    </td>
+                    <td className="actions-cell">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => onEditRequest(student.id)}
+                        disabled={isSavingEdit}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="danger-button"
+                        onClick={() => onDeleteStudent(student.id)}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Removing..." : "Remove"}
+                      </button>
                     </td>
                   </tr>
                 );

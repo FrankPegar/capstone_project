@@ -1,43 +1,57 @@
 export const parseTime = (time) => {
-  if (!time) return null;
+  if (time === null || time === undefined || time === "") return null;
 
-  const trimmed = time.trim();
+  if (time instanceof Date) {
+    if (Number.isNaN(time.getTime())) return null;
+    return time.getHours() * 60 + time.getMinutes();
+  }
+
+  if (typeof time === "number" && Number.isFinite(time)) {
+    const numericDate = new Date(time);
+    if (Number.isNaN(numericDate.getTime())) return null;
+    return numericDate.getHours() * 60 + numericDate.getMinutes();
+  }
+
+  const trimmed = `${time}`.trim();
   if (!trimmed) return null;
 
-  const hasMeridiem = /\b(am|pm)\b/i.test(trimmed);
-  let hours;
-  let minutes;
-
-  const dateTimeMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
-  if (dateTimeMatch) {
-    hours = Number(dateTimeMatch[2]);
-    minutes = Number(dateTimeMatch[3]);
+  const isoMatch = trimmed.match(
+    /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(?:Z|([+-]\d{2}):?(\d{2}))?$/i
+  );
+  if (isoMatch) {
+    const hours = Number(isoMatch[2]);
+    const minutes = Number(isoMatch[3]);
     if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
     return hours * 60 + minutes;
   }
 
-  if (hasMeridiem) {
-    const [timePart, modifierRaw] = trimmed.split(/\s+/);
-    const modifier = modifierRaw.toUpperCase();
-    const [hh, mm] = timePart.split(":").map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-
-    hours = hh % 12;
-    minutes = mm;
+  const meridiemMatch = trimmed.match(
+    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i
+  );
+  if (meridiemMatch) {
+    let hours = Number(meridiemMatch[1]);
+    const minutes = Number(meridiemMatch[2]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    const modifier = meridiemMatch[4].toUpperCase();
+    hours = hours % 12;
     if (modifier === "PM") hours += 12;
-  } else {
-    const [hh, mm] = trimmed.split(":").map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-    hours = hh;
-    minutes = mm;
+    return hours * 60 + minutes;
   }
 
-  const parsed = new Date(trimmed);
-  if (!Number.isNaN(parsed.getTime())) {
-    return parsed.getHours() * 60 + parsed.getMinutes();
+  const timeMatch = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (timeMatch) {
+    const hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+    return hours * 60 + minutes;
   }
 
-  return hours * 60 + minutes;
+  const parsedDate = new Date(trimmed);
+  if (!Number.isNaN(parsedDate.getTime())) {
+    return parsedDate.getHours() * 60 + parsedDate.getMinutes();
+  }
+
+  return null;
 };
 
 export const formatMinutes = (value) => {

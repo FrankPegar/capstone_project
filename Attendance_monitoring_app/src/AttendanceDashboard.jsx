@@ -87,11 +87,26 @@ export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
   const [timeType, setTimeType] = useState("none");
   const [timeValue, setTimeValue] = useState("");
   const [onlyNoTimeOut, setOnlyNoTimeOut] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState("");
+
+  const availableDates = useMemo(() => {
+    const unique = new Set();
+    students.forEach((student) => {
+      if (student.date) unique.add(student.date);
+    });
+    return Array.from(unique).sort((a, b) => b.localeCompare(a));
+  }, [students]);
+
+  const defaultDate = useMemo(() => {
+    if (availableDates.length > 0) return availableDates[0];
+    return new Date().toISOString().split("T")[0];
+  }, [availableDates]);
+
+  const activeDate = selectedDate || defaultDate;
 
   const todayRecords = useMemo(
-    () => students.filter((student) => student.date === selectedDate),
-    [students, selectedDate]
+    () => students.filter((student) => student.date === activeDate),
+    [students, activeDate]
   );
 
   const totalStudents = todayRecords.length;
@@ -115,7 +130,7 @@ export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
   const averageOut = averageTime(todayRecords, "timeOut");
 
   const filteredStudents = students.filter((student) => {
-    const matchesDate = student.date === selectedDate;
+    const matchesDate = student.date === activeDate;
     const matchesStrand = filterStrand === "All" || student.strand === filterStrand;
 
     const matchesSearch =
@@ -157,7 +172,7 @@ export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
             <label>Date</label>
             <input
               type="date"
-              value={selectedDate}
+              value={activeDate}
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
@@ -290,9 +305,12 @@ export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
             <tbody>
               {filteredStudents.map((student) => {
                 const { label, tone, rowClass, isLate } = getStatusMeta(student, scheduleConfig);
+                const recordKey =
+                  student.attendanceId ||
+                  `${student.id}-${student.date}-${student.timeIn || student.timeOut || "record"}`;
 
                 return (
-                  <tr key={student.id} className={`attendance-row ${rowClass}`}>
+                  <tr key={recordKey} className={`attendance-row ${rowClass}`}>
                     <td>{student.id}</td>
                     <td className="cell-name">
                       <span className="name-primary">
@@ -337,4 +355,3 @@ export default function AttendanceDashboard({ students, scheduleConfig = {} }) {
     </div>
   );
 }
-
