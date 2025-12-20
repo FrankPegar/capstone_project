@@ -1,0 +1,41 @@
+{
+  "name": "attendance-monitoring-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emailjs/browser": "^4.4.1",
+    "@supabase/realtime-js": "^2.86.0",
+    "@supabase/supabase-js": "^2.86.0",
+    "autoprefixer": "^10.4.22",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.19",
+    "dotenv": "^17.2.3",
+    "firebase": "^12.4.0",
+    "lucide-react": "^0.555.0",
+    "postcss": "^8.5.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.1.2",
+    "supabase": "^2.51.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.33.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.3.0",
+    "vite": "^7.2.4"
+  }
+}
